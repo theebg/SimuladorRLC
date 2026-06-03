@@ -1,0 +1,13 @@
+# Archivos temporales
+*.tmp
+*.log
+
+# Scripts de apoyo eliminados o locales
+find_screens.py
+find_yellow_dots.py
+find_corners.py
+implementation_plan_github.md
+
+# Notebooks o archivos pesados si no son necesarios
+*.ipynb
+*.txt

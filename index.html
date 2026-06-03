@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interactivo de Circuito RLC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #001f4d 0%, #003366 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            height: 70px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: brightness(0) invert(1);
+        }
+
+        .header-rlc {
+            height: 90px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .header-text {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-text h1 {
+            font-size: 2.2em;
+            margin-bottom: 6px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            color: #F5A623;
+        }
+
+        .header-text p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        /* PANEL IZQUIERDO - CIRCUITO */
+        .circuit-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .circuit-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .circuit-image {
+            width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+
+        /* VISORES INCRUSTADOS */
+        .display-overlay {
+            position: absolute;
+            background: rgba(10, 10, 20, 0.8);
+            border: 2px solid #005500;
+            border-radius: 4px;
+            padding: 4px 6px;
+            text-align: center;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.2) inset;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .display-overlay-label {
+            color: #00cc00;
+            font-size: 0.6em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+            opacity: 0.8;
+            white-space: nowrap;
+        }
+
+        .display-overlay-value {
+            color: #ffffff;
+            font-size: clamp(1.2em, 2vw, 1.8em);
+            font-weight: bold;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .display-overlay-unit {
+            color: #00cc00;
+            font-size: 0.6em;
+            margin-top: 1px;
+        }
+
+        /* Visor izquierdo - Corriente */
+        .display-left {
+            left: 3.96%;
+            top: 28.67%;
+            width: 31.93%;
+            height: 13.94%;
+            transform: rotate(-3.25deg);
+            min-width: 60px;
+        }
+
+        /* Visor derecho - Carga */
+        .display-right {
+            left: 74.84%;
+            top: 40.26%;
+            width: 23.40%;
+            height: 11.49%;
+            transform: rotate(3.10deg);
+            min-width: 60px;
+        }
+
+        /* Osciloscopio - arriba */
+        .oscilloscope-overlay {
+            position: absolute;
+            left: 8.14%;
+            top: 2.67%;
+            width: 40.14%;
+            height: 17.17%;
+            transform: rotate(-4.14deg);
+            background: #1a1a2e;
+            border: 2px solid #ff6b00;
+            border-radius: 6px;
+            padding: 4px;
+            box-shadow: 0 0 8px rgba(255, 107, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .oscilloscope-overlay-header {
+            color: #ff6b00;
+            font-size: 0.6em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .oscilloscope-overlay-chart {
+            width: 100% !important;
+            height: 50px !important;
+            background: #0a0a12;
+            border-radius: 3px;
+        }
+
+        .btn-speed-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .btn-speed-label {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #003366;
+            margin-right: 4px;
+        }
+
+        .btn-speed {
+            padding: 5px 10px;
+            font-size: 0.78em;
+            font-weight: 700;
+            border-radius: 4px;
+            background: #e8edf5;
+            color: #003366;
+            border: 2px solid #003366;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .btn-speed.active {
+            background: #003366;
+            color: #F5A623;
+        }
+
+        .btn-speed:hover:not(.active) {
+            background: #ccd6e8;
+        }
+
+        .circuit-description {
+            text-align: center;
+            color: #333;
+            font-size: 0.95em;
+            padding: 4px 0;
+        }
+
+        /* PANEL DERECHO - CONTROLES Y DISPLAY */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section {
+            background: #f5f7fa;
+            border-left: 4px solid #003366;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #003366;
+            box-shadow: 0 0 5px rgba(0, 51, 102, 0.3);
+        }
+
+        .input-unit {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 3px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-simulate {
+            background: linear-gradient(135deg, #F5A623 0%, #e8900f 100%);
+            color: #003366;
+            grid-column: 1 / -1;
+            font-weight: 700;
+        }
+
+        .btn-simulate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 166, 35, 0.5);
+        }
+
+        .btn-simulate:active {
+            transform: translateY(0);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-stop:active {
+            transform: translateY(0);
+        }
+
+        .btn-reset {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #d0d0d0;
+        }
+
+        /* Estilos antiguos removidos */
+
+        /* STATUS MESSAGE */
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .time-slider {
+            margin-top: 15px;
+        }
+
+        .time-slider label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .time-slider input {
+            width: 100%;
+        }
+
+        .time-display {
+            text-align: center;
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="logo-unad.png" alt="Logo UNAD" class="header-logo">
+            <div class="header-text">
+                <h1>Simulador Interactivo de Circuito RLC</h1>
+                <p>Visualización en tiempo real de carga, corriente y voltaje</p>
+            </div>
+            <img src="RLCN.png" alt="RLC" class="header-rlc">
+        </div>
+
+        <div class="content">
+            <!-- PANEL IZQUIERDO -->
+            <div class="circuit-panel">
+                <div class="circuit-container">
+                    <img src="Imagen2.png" alt="Circuito RLC" class="circuit-image">
+
+                    <!-- OSCILOSCOPIO INCRUSTADO -->
+                    <div class="oscilloscope-overlay">
+                        <div class="oscilloscope-overlay-header">V<sub>L</sub>(t)</div>
+                        <canvas id="oscilloscope-overlay-chart" class="oscilloscope-overlay-chart"></canvas>
+                    </div>
+
+                    <!-- VISOR IZQUIERDO - CORRIENTE -->
+                    <div class="display-overlay display-left">
+                        <div class="display-overlay-label">Intensidad RMS</div>
+                        <div class="display-overlay-value" id="current-overlay-value">0.00</div>
+                        <div class="display-overlay-unit" id="current-unit">A</div>
+                    </div>
+
+                    <!-- VISOR DERECHO - CARGA -->
+                    <div class="display-overlay display-right">
+                        <div class="display-overlay-label">Carga q(t)</div>
+                        <div class="display-overlay-value" id="charge-overlay-value">0.00</div>
+                        <div class="display-overlay-unit" id="charge-unit">C</div>
+                    </div>
+                </div>
+
+                <div class="circuit-description">
+                    <strong>Circuito RLC en Serie</strong><br>
+                    <span id="eq-latex" style="font-size: 1.1em; display: inline-block; margin-top: 6px;"></span>
+                </div>
+
+                <!-- INFO MEDICIONES -->
+                <div class="section" style="width:100%;">
+                    <div class="section-title">📊 Información de Mediciones</div>
+                    <p style="color: #666; font-size: 0.9em;">Los visores se encuentran incrustados en la imagen del
+                        circuito.</p>
+                    <p style="color: #666; font-size: 0.85em; margin-top: 10px;">
+                        ✓ <strong>Visor Izquierdo:</strong> Corriente i(t) [A]<br>
+                        ✓ <strong>Visor Derecho:</strong> Carga q(t) [C]<br>
+                        ✓ <strong>Osciloscopio:</strong> Voltaje V<sub>L</sub>(t) en el inductor
+                    </p>
+                </div>
+            </div>
+
+            <!-- PANEL DERECHO -->
+            <div class="control-panel">
+                <!-- Botones de Control (arriba) -->
+                <div class="section">
+                    <div class="section-title">🎛️ Control de Simulación</div>
+                    <div class="button-group">
+                        <button class="btn-simulate" id="simulate-btn" onclick="simulate()">▶️ SIMULAR</button>
+                        <button class="btn-stop" id="stop-btn" onclick="stopAnimation()" style="display: none;">⏸️
+                            PARAR</button>
+                        <button class="btn-reset" onclick="reset()">↺ RESETEAR</button>
+                    </div>
+                    <div class="btn-speed-group">
+                        <span class="btn-speed-label">Velocidad:</span>
+                        <button class="btn-speed" onclick="setSpeed(0.01)">&times;0.01</button>
+                        <button class="btn-speed" onclick="setSpeed(0.1)">&times;0.1</button>
+                        <button class="btn-speed" onclick="setSpeed(0.5)">&times;0.5</button>
+                        <button class="btn-speed active" id="speed-1" onclick="setSpeed(1)">&times;1</button>
+                        <button class="btn-speed" onclick="setSpeed(2)">&times;2</button>
+                        <button class="btn-speed" onclick="setSpeed(3)">&times;3</button>
+                    </div>
+                    <div class="time-slider">
+                        <label for="time-slider">Tiempo de Visualización</label>
+                        <input type="range" id="time-slider" min="0" max="10" step="0.01" value="0">
+                        <div class="time-display">t = <span id="time-display">0.00</span> s</div>
+                    </div>
+                    <div class="status" id="status"></div>
+                </div>
+
+                <!-- Parámetros del Circuito -->
+                <div class="section">
+                    <div class="section-title">📋 Parámetros del Circuito</div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="inductance">Inductancia (L)</label>
+                            <input type="number" id="inductance" value="1" step="0.01" min="0.001">
+                            <div class="input-unit">Henry (H)</div>
+                        </div>
+                        <div class="input-group">
+                            <label for="resistance">Resistencia (R)</label>
+                            <input type="number" id="resistance" value="2" step="0.01" min="0.001">
+                            <div class="input-unit">Ohm (Ω)</div>
+                        </div>
+                        <div class="input-group">
+                            <label for="capacitance">Capacitancia (C)</label>
+                            <input type="number" id="capacitance" value="0.333" step="0.001" min="0.001">
+                            <div class="input-unit">Farad (F)</div>
+                        </div>
+                        <div class="input-group">
+                            <label for="voltage">Voltaje Aplicado (E)</label>
+                            <input type="number" id="voltage" value="4" step="0.1">
+                            <div class="input-unit">Volt (V)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Condiciones Iniciales -->
+                <div class="section">
+                    <div class="section-title">🔌 Condiciones Iniciales</div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="initial-charge">Carga Inicial (q₀)</label>
+                            <input type="number" id="initial-charge" value="5" step="0.1">
+                            <div class="input-unit">Coulomb (C)</div>
+                        </div>
+                        <div class="input-group">
+                            <label for="initial-current">Corriente Inicial (i₀)</label>
+                            <input type="number" id="initial-current" value="6" step="0.1">
+                            <div class="input-unit">Ampere (A)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let solver = null;
+        let overlayChart = null;
+        let isSimulated = false;
+        let allVLData = [];
+        let isAnimating = false;
+        let animationStartTime = null;
+        let animationDuration = 30000; // 30s a velocidad x1
+        let currentSpeedMult = 1;
+
+        function setSpeed(mult) {
+            currentSpeedMult = mult;
+            // Base: 30 seg de física en 30 seg reales => x1 = 30000ms
+            animationDuration = 30000 / mult;
+            // Remarcar botón activo
+            document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            // Si está animando, reiniciar con nuevo ritmo desde el tiempo actual
+            if (isAnimating) {
+                const currentT = parseFloat(document.getElementById('time-slider').value);
+                animationStartTime = performance.now() - (currentT / 30) * animationDuration;
+            }
+        }
+
+        // Clase para resolver circuito RLC
+        class RLCSolver {
+            constructor(L, R, C, V) {
+                this.L = parseFloat(L);
+                this.R = parseFloat(R);
+                this.C = parseFloat(C);
+                this.V = parseFloat(V);
+
+                // Coeficientes de la EDO: a·q'' + b·q' + c·q = d
+                this.a = this.L;
+                this.b = this.R;
+                this.c = 1 / this.C;
+                this.d = this.V;
+
+                // Resolver ecuación característica: a·r² + b·r + c = 0
+                const discriminant = this.b * this.b - 4 * this.a * this.c;
+                this.discriminant = discriminant;
+
+                if (Math.abs(discriminant) < 1e-10) {
+                    // Críticamente amortiguado
+                    this.type = 'critical';
+                    this.r = -this.b / (2 * this.a);
+                } else if (discriminant > 0) {
+                    // Sobreamortiguado
+                    this.type = 'overdamped';
+                    this.r1 = (-this.b + Math.sqrt(discriminant)) / (2 * this.a);
+                    this.r2 = (-this.b - Math.sqrt(discriminant)) / (2 * this.a);
+                } else {
+                    // Subamortiguado
+                    this.type = 'underdamped';
+                    this.alpha = -this.b / (2 * this.a);
+                    this.beta = Math.sqrt(-discriminant) / (2 * this.a);
+                }
+
+                // Solución particular
+                if (Math.abs(this.c) > 1e-10) {
+                    this.qp = this.d / this.c;
+                } else if (Math.abs(this.b) > 1e-10) {
+                    // qp = (d/b)*t - implementado en la solución
+                    this.qp = 0; // no se usa para t=0
+                } else {
+                    this.qp = 0;
+                }
+            }
+
+            applyCond(q0, i0) {
+                this.q0 = parseFloat(q0);
+                this.i0 = parseFloat(i0);
+
+                if (this.type === 'critical') {
+                    this.C1 = this.q0 - this.qp;
+                    this.C2 = this.i0 + this.r * this.C1;
+                } else if (this.type === 'overdamped') {
+                    // Sistema: C1 + C2 + qp = q0
+                    //          r1·C1 + r2·C2 = i0
+                    const det = this.r1 - this.r2;
+                    this.C1 = (this.i0 - this.r2 * (this.q0 - this.qp)) / det;
+                    this.C2 = (this.q0 - this.qp) - this.C1;
+                } else {
+                    // Underdamped
+                    this.C2 = this.q0 - this.qp;
+                    this.C1 = (this.i0 - this.alpha * this.C2) / this.beta;
+                }
+            }
+
+            q(t) {
+                if (this.type === 'critical') {
+                    return (this.C1 + this.C2 * t) * Math.exp(this.r * t) + this.qp;
+                } else if (this.type === 'overdamped') {
+                    return this.C1 * Math.exp(this.r1 * t) + this.C2 * Math.exp(this.r2 * t) + this.qp;
+                } else {
+                    return Math.exp(this.alpha * t) *
+                        (this.C2 * Math.cos(this.beta * t) + this.C1 * Math.sin(this.beta * t)) + this.qp;
+                }
+            }
+
+            i(t) {
+                const dt = 1e-6;
+                return (this.q(t + dt) - this.q(t - dt)) / (2 * dt);
+            }
+
+            vL(t) {
+                const dt = 1e-5;
+                const i1 = this.i(t - dt);
+                const i2 = this.i(t + dt);
+                return this.L * (i2 - i1) / (2 * dt);
+            }
+        }
+
+        // Inicializar osciloscopio incrustado (pequeño)
+        function initOverlayChart() {
+            const ctx = document.getElementById('oscilloscope-overlay-chart').getContext('2d');
+            if (overlayChart) overlayChart.destroy();
+            overlayChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'V_L',
+                        data: [],
+                        borderColor: '#ff6b00',
+                        backgroundColor: 'rgba(255, 107, 0, 0.2)',
+                        borderWidth: 1.5,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            grid: { display: false }
+                        },
+                        y: {
+                            display: false,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Animar automáticamente de t=0 a t=30
+        function animateSimulation() {
+            if (!solver) return;
+
+            isAnimating = true;
+            animationStartTime = performance.now();
+
+            // Deshabilitar slider durante animación
+            document.getElementById('time-slider').disabled = true;
+
+            const animate = (currentTime) => {
+                const elapsed = currentTime - animationStartTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+
+                // Animar de t=0 a t=30
+                const t = progress * 30;
+                const sliderMax = 10; // El slider sigue siendo 0-10 para el rango visible
+
+                // Actualizar slider visualmente (limitado a 10s en la UI)
+                document.getElementById('time-slider').value = Math.min(t, sliderMax);
+                document.getElementById('time-display').textContent = t.toFixed(2);
+
+                // Actualizar displays simultáneamente
+                updateDisplays(t);
+
+                // Actualizar osciloscopio si hay datos
+                if (allVLData.length > 0) {
+                    const visibleDataPoints = allVLData.filter(p => p.t <= t);
+                    overlayChart.data.datasets[0].data = visibleDataPoints.map(p => p.vL);
+                    overlayChart.data.labels = visibleDataPoints.map(p => p.t.toFixed(2));
+                    overlayChart.update();
+                }
+
+                if (progress < 1 && isAnimating) {
+                    requestAnimationFrame(animate);
+                } else if (progress >= 1) {
+                    isAnimating = false;
+                    // Habilitar slider después de la animación
+                    document.getElementById('time-slider').disabled = false;
+                    document.getElementById('stop-btn').style.display = 'none';
+                    document.getElementById('simulate-btn').style.display = 'block';
+                    showStatus('✓ Animación completada - Puedes mover el slider manualmente', 'success');
+                }
+            };
+
+            requestAnimationFrame(animate);
+        }
+
+        // Detener la animación
+        function stopAnimation() {
+            isAnimating = false;
+            document.getElementById('time-slider').disabled = false;
+            document.getElementById('stop-btn').style.display = 'none';
+            document.getElementById('simulate-btn').style.display = 'block';
+            showStatus('⏸️ Animación detenida - Puedes mover el slider manualmente', 'success');
+        }
+
+        // Simular
+        function simulate() {
+            try {
+                const L = parseFloat(document.getElementById('inductance').value);
+                const R = parseFloat(document.getElementById('resistance').value);
+                const C = parseFloat(document.getElementById('capacitance').value);
+                const V = parseFloat(document.getElementById('voltage').value);
+                const q0 = parseFloat(document.getElementById('initial-charge').value);
+                const i0 = parseFloat(document.getElementById('initial-current').value);
+
+                if (L <= 0 || R <= 0 || C <= 0) {
+                    showStatus('Error: L, R, C deben ser positivos', 'error');
+                    return;
+                }
+
+                solver = new RLCSolver(L, R, C, V);
+                solver.applyCond(q0, i0);
+
+                initOverlayChart();
+                updateGraph();
+
+                // Actualizar descripción de la ecuación con KaTeX
+                try {
+                    const L_val = L.toFixed(2).replace(/\.?0+$/, '') || '1';
+                    const R_val = R.toFixed(2).replace(/\.?0+$/, '') || '1';
+                    const C_val = C.toFixed(4).replace(/\.?0+$/, '') || '1';
+                    const E_val = V.toFixed(2).replace(/\.?0+$/, '') || '0';
+                    const eqStr = `${L_val}\\,q'' + ${R_val}\\,q' + \\dfrac{q}{${C_val}} = ${E_val}`;
+                    katex.render(eqStr, document.getElementById('eq-latex'), { throwOnError: false, displayMode: false });
+                } catch (e) { }
+
+                isSimulated = true;
+                showStatus('Iniciando animación...', 'success');
+
+                // Mostrar botón de parar
+                document.getElementById('stop-btn').style.display = 'inline-block';
+                document.getElementById('simulate-btn').style.display = 'none';
+
+                // Resetear slider y comenzar animación
+                document.getElementById('time-slider').value = 0;
+                document.getElementById('time-display').textContent = '0.00';
+                updateDisplays(0);
+
+                // Iniciar animación automática
+                animateSimulation();
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Actualizar gráfica del osciloscopio
+        function updateGraph() {
+            if (!solver) return;
+
+            const tMax = 10;
+            const numPoints = 150;
+            const labels = [];
+            const data = [];
+            allVLData = [];
+
+            for (let i = 0; i <= numPoints; i++) {
+                const t = (i / numPoints) * tMax;
+                labels.push(t.toFixed(2));
+                const vL = solver.vL(t);
+                data.push(vL);
+                allVLData.push({ t: t, vL: vL });
+            }
+
+            overlayChart.data.labels = labels;
+            overlayChart.data.datasets[0].data = data;
+            overlayChart.update();
+
+            isSimulated = true;
+        }
+
+        function formatValue(value, baseUnit) {
+            if (Math.abs(value) < 1e-15) return { val: '0.00', unit: baseUnit };
+            const prefixes = [
+                { exp: 12, symbol: 'T' },
+                { exp: 9, symbol: 'G' },
+                { exp: 6, symbol: 'M' },
+                { exp: 3, symbol: 'k' },
+                { exp: 0, symbol: '' },
+                { exp: -3, symbol: 'm' },
+                { exp: -6, symbol: 'µ' },
+                { exp: -9, symbol: 'n' },
+                { exp: -12, symbol: 'p' },
+                { exp: -15, symbol: 'f' }
+            ];
+
+            let absVal = Math.abs(value);
+            let chosenPrefix = prefixes[prefixes.length - 1];
+
+            for (let p of prefixes) {
+                if (absVal >= Math.pow(10, p.exp) * 0.9999) {
+                    chosenPrefix = p;
+                    break;
+                }
+            }
+
+            let scaledValue = value / Math.pow(10, chosenPrefix.exp);
+            return {
+                val: scaledValue.toFixed(2),
+                unit: chosenPrefix.symbol + baseUnit
+            };
+        }
+
+        // Actualizar visores en tiempo t
+        function updateDisplays(t) {
+            if (!solver) {
+                document.getElementById('charge-overlay-value').textContent = '0.00';
+                document.getElementById('current-overlay-value').textContent = '0.00';
+                return;
+            }
+
+            const q = solver.q(t);
+            const i = solver.i(t);
+
+            const qFmt = formatValue(q, 'C');
+            document.getElementById('charge-overlay-value').textContent = qFmt.val;
+            document.getElementById('charge-unit').textContent = qFmt.unit;
+
+            const iFmt = formatValue(i, 'A');
+            document.getElementById('current-overlay-value').textContent = iFmt.val;
+            document.getElementById('current-unit').textContent = iFmt.unit;
+        }
+
+        // Event listener para el slider de tiempo
+        document.getElementById('time-slider').addEventListener('input', function () {
+            const t = parseFloat(this.value);
+            document.getElementById('time-display').textContent = t.toFixed(2);
+            updateDisplays(t);
+
+            if (allVLData && allVLData.length > 0 && overlayChart) {
+                const visibleDataPoints = allVLData.filter(p => p.t <= t);
+                overlayChart.data.datasets[0].data = visibleDataPoints.map(p => p.vL);
+                overlayChart.data.labels = visibleDataPoints.map(p => p.t.toFixed(2));
+                overlayChart.update();
+            }
+        });
+
+        // Resetear
+        function reset() {
+            document.getElementById('inductance').value = '1';
+            document.getElementById('resistance').value = '2';
+            document.getElementById('capacitance').value = '0.333';
+            document.getElementById('voltage').value = '4';
+            document.getElementById('initial-charge').value = '5';
+            document.getElementById('initial-current').value = '6';
+            document.getElementById('time-slider').value = '0';
+            document.getElementById('equation-display').textContent = '';
+            document.getElementById('status').classList.remove('success', 'error');
+            document.getElementById('stop-btn').style.display = 'none';
+            document.getElementById('simulate-btn').style.display = 'inline-block';
+            isAnimating = false;
+            document.getElementById('time-slider').disabled = false;
+            isSimulated = false;
+            solver = null;
+            updateDisplays(0);
+        }
+
+        // Mostrar estado
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            setTimeout(() => {
+                statusEl.classList.remove('success', 'error');
+            }, 4000);
+        }
+
+        // Inicializar osciloscopio incrustado vacío
+        initOverlayChart();
+    </script>
+</body>
+
+</html>
